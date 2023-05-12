@@ -14,6 +14,8 @@ import time
 import zipfile
 import itertools
 
+save_directory = os.path.dirname(__file__) + "/"
+
 from selenium.common.exceptions import (
     ElementNotInteractableException,
     ElementNotVisibleException,
@@ -333,6 +335,7 @@ def sign_in(
     imap_server=None,
     imap_folder="INBOX",
     beta=False,
+    save_directory=None,
 ):
     if beta:
         url = constants.MINT_BETA_ROOT_URL
@@ -365,6 +368,26 @@ def sign_in(
     driver.implicitly_wait(1)  # seconds
     count = 0
     while not driver.current_url.startswith("{}/".format(url)):
+        logger.info("Sign in loop #{}".format(count+1))
+        driver.get_screenshot_as_file(save_directory + f"/Screenshots/{count}.png")
+        
+        DOM_Contents = driver.find_element(By.XPATH, "/html/body").get_attribute("outerHTML")        
+        with open(save_directory + f"/DOMExport/DOM_{count}.html", "w") as f:
+            f.write(DOM_Contents)
+
+        DOM_Contents = driver.find_element(By.CLASS_NAME, "ius-hosted-ui-main-container").get_attribute("outerHTML")
+        with open(save_directory + f"/DOMExport/Main_Container_{count}.html", "w") as f:
+            f.write(DOM_Contents)
+
+        DOM_Contents = driver.find_elements(By.XPATH, "//button")
+        button_count = 0
+        for button in DOM_Contents:
+            button_content = button.get_attribute("outerHTML")
+            with open(save_directory + f"/DOMExport/Button_{count}_{button_count}.html", "w") as f:
+                f.write(button_content)
+            button_count+=1
+
+
         try:  # try to enter in credentials if username and password are on same page
             handle_same_page_username_password(driver, email, password)
         except (
@@ -403,6 +426,18 @@ def sign_in(
                 imap_server,
                 imap_folder,
             )
+            # TODO - Not sure if this needs to be here
+            
+            mfa_page(
+                driver,
+                'email',
+                mfa_token,
+                mfa_input_callback,
+                imap_account,
+                imap_password,
+                imap_server,
+                imap_folder,
+            )
         account_selection_page(driver, intuit_account)
         password_page(driver, password)
         # Give the overview page a chance to actually load.
@@ -418,6 +453,7 @@ def sign_in(
                     "Login to Mint failed due to timeout in the Multifactor Method Loop"
                 )
 
+    logger.info("Past sign in loop")
     driver.implicitly_wait(20)  # seconds
     # Wait until the overview page has actually loaded, and if wait_for_sync==True, sync has completed.
     status_message = None
@@ -431,6 +467,7 @@ def sign_in(
 def home_page(driver):
     try:
         element = driver.find_element(By.LINK_TEXT, "Sign in").click()
+        logger.info("Sign in clicked")
     except WebDriverException:
         logger.info("WebDriverException when clicking Sign In")
 
@@ -439,6 +476,7 @@ def user_selection_page(driver):
     # click "Use a different user ID" if needed
     try:
         driver.find_element(By.ID, "ius-link-use-a-different-id-known-device").click()
+        logger.info("Different ID selected")
         WebDriverWait(driver, 20).until(
             expected_conditions.presence_of_element_located(
                 (
@@ -544,8 +582,8 @@ def handle_login_failures(driver):
         )
     except TimeoutException:
         pass
-
-
+    
+    
 def bypass_verified_user_page(driver):
     # bypass "Let's add your current mobile number" interstitial page
     # returns True is page is bypassed
@@ -615,6 +653,7 @@ def mfa_page(
     imap_server,
     imap_folder,
 ):
+    logger.info("MFA w/ passed method")
     if mfa_method is None:
         mfa_result = search_mfa_method(driver)
     else:
@@ -683,6 +722,7 @@ def set_mfa_method(driver, mfa_method):
     )
     mfa_result = list(mfa)[0]
     try:
+        # TODO - This was commented out up to the click()
         mfa_token_select = driver.find_element(
             By.CSS_SELECTOR, mfa_result[SELECT_CSS_SELECTORS_LABEL]
         ).click()
@@ -707,6 +747,7 @@ def handle_soft_token(mfa_token_input, mfa_token_button, mfa_input_callback, mfa
         else:
             mfa_code = (mfa_input_callback or input)(DEFAULT_MFA_INPUT_PROMPT)
         submit_mfa_code(mfa_token_input, mfa_token_button, mfa_code)
+        logger.info("Soft token entered")
     except (NoSuchElementException, ElementNotInteractableException):
         logger.info("Not on Soft Token MFA Screen")
 
@@ -730,6 +771,7 @@ def handle_email_by_imap(
         if mfa_code is None:
             mfa_code = (mfa_input_callback or input)(DEFAULT_MFA_INPUT_PROMPT)
         submit_mfa_code(mfa_token_input, mfa_token_button, mfa_code)
+        logger.info("Email code entered")
     except (NoSuchElementException, ElementNotInteractableException, EOFError):
         logger.info("Not on Email MFA Screen")
 
@@ -738,6 +780,7 @@ def handle_other_mfa(mfa_token_input, mfa_token_button, mfa_input_callback):
     try:
         mfa_code = (mfa_input_callback or input)(DEFAULT_MFA_INPUT_PROMPT)
         submit_mfa_code(mfa_token_input, mfa_token_button, mfa_code)
+        logger.info("SMS code entered")
     except (NoSuchElementException, ElementNotInteractableException, EOFError):
         logger.info("Not on SMS or Authenticator MFA Screen")
 
@@ -746,6 +789,7 @@ def submit_mfa_code(mfa_token_input, mfa_token_button, mfa_code):
     mfa_token_input.clear()
     mfa_token_input.send_keys(mfa_code)
     mfa_token_button.click()
+    logger.info("MFA code entered")
 
 
 def account_selection_page(driver, intuit_account):
@@ -755,37 +799,42 @@ def account_selection_page(driver, intuit_account):
             expected_conditions.presence_of_element_located(
                 (
                     By.CSS_SELECTOR,
-                    '[data-testid="SelectAccountForm"], [data-testid="IdFirstKnownContainer"]',
+                    # '[data-testid="SelectAccountForm"], [data-testid="IdFirstKnownContainer"], [data-testid="AccountChoiceIdentifier_0"]'
+                    '[data-testid="SelectAccountContinueButton"], [data-testid="AccountChoiceUsage_0"]'
                 )
             )
         )
         select_account = driver.find_element(
             By.CSS_SELECTOR,
-            '[data-testid="SelectAccountForm"], [data-testid="IdFirstKnownContainer"]',
+            # '[data-testid="SelectAccountForm"], [data-testid="IdFirstKnownContainer"], [data-testid="AccountChoiceIdentifier_0"]'
+            '[data-testid="SelectAccountContinueButton"], [data-testid="AccountChoiceUsage_0"]'
         )
         if intuit_account is not None:
-            account_input = select_account.find_element(
-                By.XPATH,
-                "//*/span[text()='{}']/../../../preceding-sibling::input".format(
-                    intuit_account
-                ),
-            )
-            # NOTE: We need to execute a script because simply using account_input.click()
-            #       results in ElementClickInterceptedException.
-            driver.execute_script("arguments[0].click()", account_input)
+            select_account.click()
+            logger.info("Account selected")
+            # account_input = select_account.find_element(
+            #     By.XPATH,
+            #     "//*/span[text()='{}']/../../../preceding-sibling::input".format(
+            #         intuit_account
+            #     ),
+            # )
+            # # NOTE: We need to execute a script because simply using account_input.click()
+            # #       results in ElementClickInterceptedException.
+            # driver.execute_script("arguments[0].click()", account_input)
 
         WebDriverWait(driver, 20).until(
             expected_conditions.presence_of_element_located(
                 (
                     By.CSS_SELECTOR,
-                    "#ius-sign-in-mfa-select-account-continue-btn, [data-testid='SelectAccountContinueButton'], [data-testid='AccountChoiceUsage_0']",
+                    '[data-testid="SelectAccountContinueButton"], [data-testid="AccountChoiceUsage_0"]',
                 )
             )
         )
         driver.find_element(
             By.CSS_SELECTOR,
-            '#ius-sign-in-mfa-select-account-continue-btn, [data-testid="SelectAccountContinueButton"], [data-testid="AccountChoiceUsage_0"]',
+            '[data-testid="SelectAccountContinueButton"], [data-testid="AccountChoiceUsage_0"]',
         ).click()
+        logger.info("Account selection button pressed")
     except (TimeoutException, NoSuchElementException):
         logger.info("Not on Account Selection Screen")
 
@@ -801,6 +850,7 @@ def password_page(driver, password):
             By.CSS_SELECTOR,
             '#ius-sign-in-mfa-password-collection-continue-btn, [data-testid="passwordVerificationContinueButton"]',
         ).submit()
+        logger.info("Password entered")
     except (
         NoSuchElementException,
         StaleElementReferenceException,
@@ -837,3 +887,4 @@ def handle_wait_for_sync(driver, wait_for_sync_timeout, fail_if_stale):
             raise exceptions.StaleDataException
     except exceptions.StaleDataException:
         sys.exit(1)
+                

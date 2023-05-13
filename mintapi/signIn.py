@@ -428,16 +428,16 @@ def sign_in(
             )
             # TODO - Not sure if this needs to be here
             
-            mfa_page(
-                driver,
-                'email',
-                mfa_token,
-                mfa_input_callback,
-                imap_account,
-                imap_password,
-                imap_server,
-                imap_folder,
-            )
+            # mfa_page(
+            #     driver,
+            #     'email',
+            #     mfa_token,
+            #     mfa_input_callback,
+            #     imap_account,
+            #     imap_password,
+            #     imap_server,
+            #     imap_folder,
+            # )
         account_selection_page(driver, intuit_account)
         password_page(driver, password)
         # Give the overview page a chance to actually load.
@@ -723,9 +723,9 @@ def set_mfa_method(driver, mfa_method):
     mfa_result = list(mfa)[0]
     try:
         # TODO - This was commented out up to the click()
-        mfa_token_select = driver.find_element(
-            By.CSS_SELECTOR, mfa_result[SELECT_CSS_SELECTORS_LABEL]
-        ).click()
+        # mfa_token_select = driver.find_element(
+        #     By.CSS_SELECTOR, mfa_result[SELECT_CSS_SELECTORS_LABEL]
+        # ).click()
         mfa_token_input = driver.find_element(
             By.CSS_SELECTOR, mfa_result[INPUT_CSS_SELECTORS_LABEL]
         )

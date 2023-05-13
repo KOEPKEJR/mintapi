@@ -12,3 +12,7 @@ __pycache__
 .vscode/
 .venv
 /venv
+config.ini
+/Session
+DOMExport
+/Screenshots

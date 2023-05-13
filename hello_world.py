@@ -9,17 +9,19 @@ import logging
 import shutil
 
 SESSION_PATH = "/home/ubuntu/.config/google-chrome"
+HEADLESS = True
 
 def main():
     logging.basicConfig(level=logging.INFO)
     
+    root_folder = str(Path(__file__).parent)
     
     # Config setup
     config = configparser.ConfigParser()
-    config.read(Path(__file__).parent /'config.ini')
+    config.read(root_folder + '/config.ini')
 
     
-    root_folder = str(Path(__file__).parent)
+    
     
     shutil.rmtree(root_folder + "/DOMExport")
     os.makedirs(root_folder + "/DOMExport")
@@ -45,7 +47,7 @@ def main():
         # the token that is used to generate the TOTP
         # account name when multiple accounts are registered with this email.
         intuit_account=config['Mint']['email'].lower(),
-        headless=True,  # Whether the chromedriver should work without opening a
+        headless=HEADLESS,  # Whether the chromedriver should work without opening a
         # visible window (useful for server-side deployments)
         # None will use the default account.
         # Directory that the Chrome persistent session will be written/read from.
@@ -61,7 +63,7 @@ def main():
         wait_for_sync=True,  # do not wait for accounts to sync
         wait_for_sync_timeout=500,  # number of seconds to wait for sync
         # True will use a system provided chromedriver binary that
-        use_chromedriver_on_path=True,
+        use_chromedriver_on_path=False,
         # is on the PATH (instead of downloading the latest version)
         # pre-configured driver. If None, Mint will initialize the WebDriver.
         driver=None,

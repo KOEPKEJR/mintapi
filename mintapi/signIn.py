@@ -351,15 +351,16 @@ def sign_in(
         time.sleep(1)
         home_page(driver)
 
-    WebDriverWait(driver, 20).until(
-        expected_conditions.presence_of_element_located(
-            (
-                By.CSS_SELECTOR,
-                ".ius-hosted-ui-main-container, #ius-link-use-a-different-id-known-device, #ius-userid, "
-                '#ius-identifier, #ius-option-username, [data-testid="IdentifierFirstSubmitButton"]',
-            )
-        )
-    )
+    # TODO -  Determine why this failes
+    # WebDriverWait(driver, 20).until(
+    #     expected_conditions.presence_of_element_located(
+    #         (
+    #             By.CSS_SELECTOR,
+    #             ".ius-hosted-ui-main-container, #ius-link-use-a-different-id-known-device, #ius-userid, "
+    #             '#ius-identifier, #ius-option-username, [data-testid="IdentifierFirstSubmitButton"]',
+    #         )
+    #     )
+    # )
 
     driver.implicitly_wait(0)  # seconds
 
@@ -371,21 +372,31 @@ def sign_in(
         logger.info("Sign in loop #{}".format(count+1))
         driver.get_screenshot_as_file(save_directory + f"/Screenshots/{count}.png")
         
-        DOM_Contents = driver.find_element(By.XPATH, "/html/body").get_attribute("outerHTML")        
-        with open(save_directory + f"/DOMExport/DOM_{count}.html", "w") as f:
-            f.write(DOM_Contents)
+        # TODO - Need to determine new class names
+        try:
+            DOM_Contents = driver.find_element(By.XPATH, "/html/body").get_attribute("outerHTML")        
+            with open(save_directory + f"/DOMExport/DOM_{count}.html", "w") as f:
+                f.write(DOM_Contents)
+        except NoSuchElementException:
+            pass
+        
+        try:
+            DOM_Contents = driver.find_element(By.CLASS_NAME, "ius-hosted-ui-main-container").get_attribute("outerHTML")
+            with open(save_directory + f"/DOMExport/Main_Container_{count}.html", "w") as f:
+                f.write(DOM_Contents)
+        except NoSuchElementException:
+            pass
 
-        DOM_Contents = driver.find_element(By.CLASS_NAME, "ius-hosted-ui-main-container").get_attribute("outerHTML")
-        with open(save_directory + f"/DOMExport/Main_Container_{count}.html", "w") as f:
-            f.write(DOM_Contents)
-
-        DOM_Contents = driver.find_elements(By.XPATH, "//button")
-        button_count = 0
-        for button in DOM_Contents:
-            button_content = button.get_attribute("outerHTML")
-            with open(save_directory + f"/DOMExport/Button_{count}_{button_count}.html", "w") as f:
-                f.write(button_content)
-            button_count+=1
+        try:
+            DOM_Contents = driver.find_elements(By.XPATH, "//button")
+            button_count = 0
+            for button in DOM_Contents:
+                button_content = button.get_attribute("outerHTML")
+                with open(save_directory + f"/DOMExport/Button_{count}_{button_count}.html", "w") as f:
+                    f.write(button_content)
+                button_count+=1
+        except NoSuchElementException:
+            pass
 
 
         try:  # try to enter in credentials if username and password are on same page

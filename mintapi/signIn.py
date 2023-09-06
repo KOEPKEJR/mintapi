@@ -428,16 +428,16 @@ def sign_in(
             )
             # TODO - Not sure if this needs to be here
             
-            # mfa_page(
-            #     driver,
-            #     'email',
-            #     mfa_token,
-            #     mfa_input_callback,
-            #     imap_account,
-            #     imap_password,
-            #     imap_server,
-            #     imap_folder,
-            # )
+            mfa_page(
+                driver,
+                'email',
+                mfa_token,
+                mfa_input_callback,
+                imap_account,
+                imap_password,
+                imap_server,
+                imap_folder,
+            )
         account_selection_page(driver, intuit_account)
         password_page(driver, password)
         # Give the overview page a chance to actually load.

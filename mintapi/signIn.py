@@ -653,7 +653,7 @@ def mfa_page(
     imap_server,
     imap_folder,
 ):
-    logger.info("MFA w/ passed method")
+    logger.info(f"MFA attempt w/ {mfa_method} passed method")
     if mfa_method is None:
         mfa_result = search_mfa_method(driver)
     else:

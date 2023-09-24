@@ -53,7 +53,7 @@ def main():
         # Directory that the Chrome persistent session will be written/read from.
         # session_path=Path(__file__).parent / "Session",
         # session_path = SESSION_PATH,
-        session_path = None,
+        session_path = SESSION_PATH,
         # To avoid the 2FA code being asked for multiple times, you can either set
         # this parameter or log in by hand in Chrome under the same user this runs
         # as.
@@ -62,9 +62,9 @@ def main():
         imap_server="imap.gmail.com",  # IMAP server host name
         imap_folder="Intuit",  # IMAP folder that receives MFA email
         wait_for_sync=True,  # do not wait for accounts to sync
-        wait_for_sync_timeout=500,  # number of seconds to wait for sync
+        wait_for_sync_timeout=60*10,  # number of seconds to wait for sync
         # True will use a system provided chromedriver binary that
-        use_chromedriver_on_path=False,
+        use_chromedriver_on_path=True,
         # is on the PATH (instead of downloading the latest version)
         # pre-configured driver. If None, Mint will initialize the WebDriver.
         driver=None,

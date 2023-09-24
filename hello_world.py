@@ -52,7 +52,8 @@ def main():
         # None will use the default account.
         # Directory that the Chrome persistent session will be written/read from.
         # session_path=Path(__file__).parent / "Session",
-        session_path = SESSION_PATH,
+        # session_path = SESSION_PATH,
+        session_path = None,
         # To avoid the 2FA code being asked for multiple times, you can either set
         # this parameter or log in by hand in Chrome under the same user this runs
         # as.

@@ -15,6 +15,7 @@ import zipfile
 import itertools
 
 save_directory = os.path.dirname(__file__) + "/"
+LOG_DEPTH = 0
 
 from selenium.common.exceptions import (
     ElementNotInteractableException,
@@ -337,6 +338,7 @@ def sign_in(
     beta=False,
     save_directory=None,
 ):
+    logger.info("sign_in()")
     if beta:
         url = constants.MINT_BETA_ROOT_URL
     else:
@@ -466,6 +468,7 @@ def sign_in(
 
 def home_page(driver):
     try:
+        logger.info("home_page()")
         element = driver.find_element(By.LINK_TEXT, "Sign in").click()
         logger.info("Sign in clicked")
     except WebDriverException:
@@ -474,6 +477,7 @@ def home_page(driver):
 
 def user_selection_page(driver):
     # click "Use a different user ID" if needed
+    logger.info("user_selection_page()")
     try:
         driver.find_element(By.ID, "ius-link-use-a-different-id-known-device").click()
         logger.info("Different ID selected")
@@ -653,7 +657,7 @@ def mfa_page(
     imap_server,
     imap_folder,
 ):
-    logger.info(f"MFA attempt w/ {mfa_method} passed method")
+    logger.info(f"mfa_page({mfa_method})")
     if mfa_method is None:
         mfa_result = search_mfa_method(driver)
     else:
@@ -722,6 +726,7 @@ def set_mfa_method(driver, mfa_method):
     )
     mfa_result = list(mfa)[0]
     try:
+        logger.info(f"set_mfa_method({mfa_method})")
         # TODO - This was commented out up to the click()
         # mfa_token_select = driver.find_element(
         #     By.CSS_SELECTOR, mfa_result[SELECT_CSS_SELECTORS_LABEL]
@@ -795,6 +800,7 @@ def submit_mfa_code(mfa_token_input, mfa_token_button, mfa_code):
 def account_selection_page(driver, intuit_account):
     # account selection screen -- if there are multiple accounts, select one
     try:
+        logger.info("account_selection_page()")
         WebDriverWait(driver, 20).until(
             expected_conditions.presence_of_element_located(
                 (
@@ -842,6 +848,7 @@ def account_selection_page(driver, intuit_account):
 def password_page(driver, password):
     # password only sometimes after mfa
     try:
+        logger.info("password_page()")
         driver.find_element(
             By.CSS_SELECTOR,
             "#iux-password-confirmation-password, #ius-sign-in-mfa-password-collection-current-password",

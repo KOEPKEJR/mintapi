@@ -15,7 +15,7 @@ import zipfile
 import itertools
 
 save_directory = os.path.dirname(__file__) + "/"
-LOG_DEPTH = 0
+
 
 from selenium.common.exceptions import (
     ElementNotInteractableException,
@@ -34,7 +34,19 @@ from seleniumrequests import Chrome
 import oathtool
 
 logger = logging.getLogger("mintapi")
+LOG_DEPTH = 0
+def logger_wrap(func):
+    def write_bookends(*args, **kwargs):
+        global LOG_DEPTH
+        logger.info(log_tabs() + func.__name__ + '() - Start')
+        LOG_DEPTH+=1
+        result = func(*args, **kwargs)
+        logger.info(log_tabs() + func.__name__ + '() - End')
+        LOG_DEPTH-=1
+    return write_bookends
 
+def log_tabs():
+    return '\t'*LOG_DEPTH
 
 class MFAMethodNotAvailableError(RuntimeError):
     pass
@@ -84,7 +96,7 @@ STANDARD_MISSING_EXCEPTIONS = (
     ElementNotVisibleException,
 )
 
-
+@logger_wrap
 def get_email_code(imap_account, imap_password, imap_server, imap_folder, delete=True):
     code = None
     try:
@@ -319,7 +331,7 @@ def _create_web_driver_at_mint_com(
         )
     return driver
 
-
+@logger_wrap
 def sign_in(
     email,
     password,
@@ -338,7 +350,6 @@ def sign_in(
     beta=False,
     save_directory=None,
 ):
-    logger.info("sign_in()")
     if beta:
         url = constants.MINT_BETA_ROOT_URL
     else:
@@ -371,7 +382,7 @@ def sign_in(
     driver.implicitly_wait(1)  # seconds
     count = 0
     while not driver.current_url.startswith("{}/".format(url)):
-        logger.info("Sign in loop #{}".format(count+1))
+        logger.info(log_tabs() + "Sign in loop #{}".format(count+1))
         driver.get_screenshot_as_file(save_directory + f"/Screenshots/{count}.png")
         
         # TODO - Need to determine new class names
@@ -466,7 +477,7 @@ def sign_in(
                     "Login to Mint failed due to timeout in the Multifactor Method Loop"
                 )
 
-    logger.info("Past sign in loop")
+    logger.info(log_tabs(), "Past sign in loop")
     driver.implicitly_wait(20)  # seconds
     # Wait until the overview page has actually loaded, and if wait_for_sync==True, sync has completed.
     status_message = None
@@ -476,19 +487,17 @@ def sign_in(
         )
     return status_message
 
-
+@logger_wrap
 def home_page(driver):
     try:
-        logger.info("home_page()")
         element = driver.find_element(By.LINK_TEXT, "Sign in").click()
         logger.info("Sign in clicked")
     except WebDriverException:
         logger.info("WebDriverException when clicking Sign In")
 
-
+@logger_wrap
 def user_selection_page(driver):
     # click "Use a different user ID" if needed
-    logger.info("user_selection_page()")
     try:
         driver.find_element(By.ID, "ius-link-use-a-different-id-known-device").click()
         logger.info("Different ID selected")
@@ -503,7 +512,7 @@ def user_selection_page(driver):
     except NoSuchElementException:
         pass
 
-
+@logger_wrap
 def handle_same_page_username_password(driver, email, password):
     email_input = driver.find_element(By.ID, "ius-userid")
     if not email_input.is_displayed():
@@ -516,7 +525,7 @@ def handle_same_page_username_password(driver, email, password):
         '#ius-sign-in-submit-btn, [data-testid="IdentifierFirstSubmitButton"]',
     ).submit()
 
-
+@logger_wrap
 def handle_different_page_username_password(driver, email):
     try:
         email_input = driver.find_element(
@@ -657,7 +666,7 @@ def bypass_passwordless_login_page(driver):
     ):
         pass
 
-
+@logger_wrap
 def mfa_page(
     driver,
     mfa_method,
@@ -668,7 +677,7 @@ def mfa_page(
     imap_server,
     imap_folder,
 ):
-    logger.info(f"mfa_page({mfa_method})")
+    logger.info(log_tabs(), f"mfa_page({mfa_method})")
     if mfa_method is None:
         mfa_result = search_mfa_method(driver)
     else:
@@ -729,7 +738,7 @@ def search_mfa_method(driver):
             )
     return mfa_token_input, mfa_token_button, mfa_method
 
-
+@logger_wrap
 def set_mfa_method(driver, mfa_method):
     mfa = filter(
         lambda method: method[constants.MFA_METHOD_LABEL] == mfa_method,
@@ -807,11 +816,10 @@ def submit_mfa_code(mfa_token_input, mfa_token_button, mfa_code):
     mfa_token_button.click()
     logger.info("MFA code entered")
 
-
+@logger_wrap
 def account_selection_page(driver, intuit_account):
     # account selection screen -- if there are multiple accounts, select one
     try:
-        logger.info("account_selection_page()")
         WebDriverWait(driver, 20).until(
             expected_conditions.presence_of_element_located(
                 (
@@ -855,11 +863,10 @@ def account_selection_page(driver, intuit_account):
     except (TimeoutException, NoSuchElementException):
         logger.info("Not on Account Selection Screen")
 
-
+@logger_wrap
 def password_page(driver, password):
     # password only sometimes after mfa
     try:
-        logger.info("password_page()")
         driver.find_element(
             By.CSS_SELECTOR,
             "#iux-password-confirmation-password, #ius-sign-in-mfa-password-collection-current-password",
